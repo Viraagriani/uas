@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Berita;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class BeritaController extends Controller
 {
+public function __construct()
+    {
+        $this->middleware('auth:api', ['except' => ['index']]);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -14,7 +20,8 @@ class BeritaController extends Controller
      */
     public function index()
     {
-      $data = Berita::all();
+      //$data = Berita::all();
+      $data = Berita::with('kategor')->get();
       return response()->json($data);
     }
 
@@ -36,7 +43,20 @@ class BeritaController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [ 
+            'nama_berita' => 'required',
+           'headline' => 'required',
+           'isi_berita' => 'required',
+           'id_berita' => 'required'
+
+           
+           
+       ]);
+       if($validator->passes()){
+           return Berita::create($request->all());
+       }
+       return response()->json(['message' => 'Data Gagal Di Tambahkan!!']);
+    
     }
 
     /**
@@ -47,7 +67,7 @@ class BeritaController extends Controller
      */
     public function show($berita)
     {
-        $data = Berita::where ('id',$berita)->first();
+        $data = Berita::with('kategor')->where('id',$berita)->first();
         if(!empty($data)){
             return $data;
         
@@ -75,9 +95,34 @@ class BeritaController extends Controller
      * @param  \App\Berita  $berita
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Berita $berita)
+    public function update(Request $request,$berita)
     {
-        //
+        $data = Berita::where('id',$berita)->first();
+        if(!empty($data)){
+            $validator = Validator::make($request->all(), [ 
+            'nama_berita' => 'required',
+            'headline' => 'required',
+            'isi_berita' => 'required',
+            'id_berita' => 'required'
+
+            
+
+            ]);
+            
+            if($validator->passes()){
+                $data->update($request->all());
+                return response()->json([
+                    'message' => 'Data Berhasil Di Ubah',
+                    'data' => $data
+                ]);
+            }else{
+                return response()->json([
+                    'message' => 'Data gagal di Ubah',
+                    'data' => $validator->errors()->all()
+                ]);
+            }
+        }
+        return response()->json(['message' => 'Data Tidak di temukan!'], 404);
     }
 
     /**
@@ -88,17 +133,15 @@ class BeritaController extends Controller
      */
     public function destroy($berita)
     {
-        $data = Berita::where('id',$berita) ->first();
-        if(!empty($data)){
-            return $data;
-            return response()->jdon([
-                'meesage' => 'data tidak ditemukan'
+        $data = Berita::where('id', $berita)->first();
+        if(empty($data)){
+            return response()->json([
+                'message' => 'Data Tidak Ditemukan'
             ]);
-        
         }
         $data->delete();
-        return response()->jdon([
-            'meesage' => 'data ditemukan dan data di hapus'
+        return response()->json([
+            'message' => 'Data berhasil di hapus'
         ]);
 
     }
